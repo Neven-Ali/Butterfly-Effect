@@ -12,8 +12,8 @@ import {
   CircularProgress,
   Link,
 } from "@mui/material";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { login } from "../repositories/authRepository"; // استيراد وظيفة تسجيل الدخول
 
 // تعريف Yup schema للتحقق من صحة البيانات
 const LoginSchema = Yup.object().shape({
@@ -63,15 +63,10 @@ const Login = () => {
   const handleLogin = async (values) => {
     setLoading(true); // بدء التحميل
     try {
-      const response = await axios.post(
-        "https://daaboul.nasayimhalab.com/api/account/login/",
-        values
-      );
-      if (response.status === 200) {
-        navigate("/home");
-      }
+      await login(values); // استدعاء وظيفة تسجيل الدخول من الـ repository
+      navigate("/home"); // الانتقال إلى الصفحة الرئيسية بعد تسجيل الدخول
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || "Login failed");
+      setErrorMessage(error.message || "Login failed"); // عرض رسالة الخطأ
       setOpenPopup(true); // فتح popup عند وجود خطأ
     } finally {
       setLoading(false); // إيقاف التحميل بغض النظر عن النتيجة
