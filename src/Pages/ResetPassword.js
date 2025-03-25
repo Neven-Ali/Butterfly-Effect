@@ -2,7 +2,9 @@ import React from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { TextField, Button, Container, Typography, Box } from "@mui/material";
-
+////////////
+import { useLanguage } from "../contexts/LanguageContext";
+import { useTranslation } from "react-i18next";
 const ResetPasswordSchema = Yup.object().shape({
   password: Yup.string()
     .min(8, "Password must be at least 8 characters")
@@ -17,6 +19,9 @@ const ResetPasswordSchema = Yup.object().shape({
 });
 
 const ResetPassword = () => {
+  //////  من أجل اللغة
+  const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
   return (
     <Container maxWidth="sm">
       <Box
@@ -31,7 +36,7 @@ const ResetPassword = () => {
         }}
       >
         <Typography component="h1" variant="h5">
-          Reset Password
+          {t("Reset Password")}
         </Typography>
         <Formik
           initialValues={{
@@ -50,7 +55,7 @@ const ResetPassword = () => {
                 margin="normal"
                 fullWidth
                 name="password"
-                label="Current Password"
+                label={t("Current Password")}
                 type="password"
                 id="password"
                 autoComplete="current-password"
@@ -62,7 +67,7 @@ const ResetPassword = () => {
                 margin="normal"
                 fullWidth
                 name="new_password"
-                label="New Password"
+                label={t("New Password")}
                 type="password"
                 id="new_password"
                 autoComplete="new-password"
@@ -75,7 +80,7 @@ const ResetPassword = () => {
                 variant="contained"
                 sx={{ mt: 3, mb: 2 }}
               >
-                Reset Password
+                {t("Reset Password")}
               </Button>
             </Form>
           )}

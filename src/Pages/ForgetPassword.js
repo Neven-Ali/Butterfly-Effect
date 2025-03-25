@@ -2,7 +2,9 @@ import React from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { TextField, Button, Container, Typography, Box } from "@mui/material";
-
+////////////
+import { useLanguage } from "../contexts/LanguageContext";
+import { useTranslation } from "react-i18next";
 // تعريف مخطط التحقق من صحة البيانات باستخدام Yup
 const ForgetPasswordSchema = Yup.object().shape({
   username: Yup.string()
@@ -17,6 +19,9 @@ const ForgetPasswordSchema = Yup.object().shape({
 });
 
 const ForgetPassword = () => {
+  //////  من أجل اللغة
+  const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
   return (
     <Container maxWidth="sm">
       <Box
@@ -26,12 +31,12 @@ const ForgetPassword = () => {
           flexDirection: "column",
           alignItems: "center",
           backgroundColor: "#f5f5f5", // لون خلفية
-          padding: 4, // إضافة حشو
-          borderRadius: 2, // حواف مستديرة
+          padding: 4,
+          borderRadius: 2,
         }}
       >
         <Typography component="h1" variant="h5">
-          Forget Password
+          {t("Forget Password")}
         </Typography>
         <Formik
           initialValues={{
@@ -51,7 +56,7 @@ const ForgetPassword = () => {
                 margin="normal"
                 fullWidth
                 id="username"
-                label="Username"
+                label={t("Username")}
                 name="username"
                 autoComplete="username"
                 error={touched.username && Boolean(errors.username)}
@@ -62,7 +67,7 @@ const ForgetPassword = () => {
                 margin="normal"
                 fullWidth
                 id="code"
-                label="Verification Code"
+                label={t("Verification Code")}
                 name="code"
                 autoComplete="off"
                 error={touched.code && Boolean(errors.code)}
@@ -73,7 +78,7 @@ const ForgetPassword = () => {
                 margin="normal"
                 fullWidth
                 name="new_password"
-                label="New Password"
+                label={t("New Password")}
                 type="password"
                 id="new_password"
                 autoComplete="new-password"
@@ -86,7 +91,7 @@ const ForgetPassword = () => {
                 variant="contained"
                 sx={{ mt: 3, mb: 2 }}
               >
-                Reset Password
+                {t("Reset Password")}
               </Button>
             </Form>
           )}

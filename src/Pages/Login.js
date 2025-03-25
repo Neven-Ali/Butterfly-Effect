@@ -14,6 +14,9 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { login } from "../repositories/authRepository"; // استيراد وظيفة تسجيل الدخول
+////////////
+import { useLanguage } from "../contexts/LanguageContext";
+import { useTranslation } from "react-i18next";
 
 // تعريف Yup schema للتحقق من صحة البيانات
 const LoginSchema = Yup.object().shape({
@@ -53,7 +56,9 @@ const Login = () => {
   const [openPopup, setOpenPopup] = React.useState(false); // حالة فتح/إغلاق popup
   const [errorMessage, setErrorMessage] = React.useState(""); // رسالة الخطأ
   const [loading, setLoading] = React.useState(false); // حالة التحميل
-
+  //////  من أجل اللغة
+  const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
   // إغلاق popup
   const handleClosePopup = () => {
     setOpenPopup(false);
@@ -87,7 +92,7 @@ const Login = () => {
         }}
       >
         <Typography component="h1" variant="h5">
-          Login
+          {t("Login")}
         </Typography>
         <Formik
           initialValues={{
@@ -104,7 +109,7 @@ const Login = () => {
                 margin="normal"
                 fullWidth
                 id="username"
-                label="Username"
+                label={t("Username")}
                 name="username"
                 autoComplete="username"
                 error={touched.username && Boolean(errors.username)}
@@ -115,7 +120,7 @@ const Login = () => {
                 margin="normal"
                 fullWidth
                 name="password"
-                label="Password"
+                label={t("Password")}
                 type="password"
                 id="password"
                 autoComplete="current-password"
@@ -132,7 +137,7 @@ const Login = () => {
                 {loading ? ( // عرض CircularProgress أثناء التحميل
                   <CircularProgress size={24} color="inherit" />
                 ) : (
-                  "Login"
+                  t("Login")
                 )}
               </Button>
             </Form>
@@ -141,16 +146,16 @@ const Login = () => {
 
         {/* رابط "Don't have an account yet?" */}
         <Typography variant="body2" sx={{ mt: 2 }}>
-          Don't have an account yet?
+          {t("Don't have an account yet? ")}
           <Link href="/register" underline="hover">
-            Sign up
+            {t("Sign up")}
           </Link>
         </Typography>
 
         {/* رابط "Forgot password?" */}
         <Typography variant="body2" sx={{ mt: 1 }}>
           <Link href="/resetPassword" underline="hover">
-            Forgot password?
+            {t("Forgot password?")}
           </Link>
         </Typography>
       </Box>

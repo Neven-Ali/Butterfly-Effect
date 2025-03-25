@@ -4,7 +4,10 @@ import Login from "./Pages/Login";
 import Home from "./Pages/Home";
 import ForgetPassword from "./Pages/ForgetPassword";
 import ResetPassword from "./Pages/ResetPassword";
-
+// import ThemeWrapper from "./ThemeWrapper";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import { LanguageProvider } from "./contexts/LanguageContext";
 const AppRoutes = () => {
   return (
     <Routes>

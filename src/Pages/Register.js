@@ -14,7 +14,9 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { register } from "../repositories/authRepository"; // استيراد وظيفة التسجيل
-
+//////////// من أجل اللغة
+import { useLanguage } from "../contexts/LanguageContext";
+import { useTranslation } from "react-i18next";
 // تعريف مخطط التحقق من صحة البيانات باستخدام Yup
 const SignUpSchema = Yup.object().shape({
   first_name: Yup.string()
@@ -63,7 +65,9 @@ const Register = () => {
   const [openPopup, setOpenPopup] = React.useState(false); // حالة فتح/إغلاق popup
   const [errorMessage, setErrorMessage] = React.useState(""); // رسالة الخطأ
   const [loading, setLoading] = React.useState(false); // حالة التحميل
-
+  //////  من أجل اللغة
+  const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
   // إغلاق popup
   const handleClosePopup = () => {
     setOpenPopup(false);
@@ -96,7 +100,7 @@ const Register = () => {
         }}
       >
         <Typography component="h1" variant="h5">
-          Sign Up
+          {t("Sign Up")}
         </Typography>
         <Formik
           initialValues={{
@@ -116,7 +120,7 @@ const Register = () => {
                 margin="normal"
                 fullWidth
                 id="firstName"
-                label="First Name"
+                label={t("First Name")}
                 name="first_name"
                 autoComplete="given-name"
                 error={touched.first_name && Boolean(errors.first_name)}
@@ -127,7 +131,7 @@ const Register = () => {
                 margin="normal"
                 fullWidth
                 id="lastName"
-                label="Last Name"
+                label={t("Last Name")}
                 name="last_name"
                 autoComplete="family-name"
                 error={touched.last_name && Boolean(errors.last_name)}
@@ -138,7 +142,7 @@ const Register = () => {
                 margin="normal"
                 fullWidth
                 id="username"
-                label="Username"
+                label={t("Username")}
                 name="username"
                 autoComplete="username"
                 error={touched.username && Boolean(errors.username)}
@@ -149,7 +153,7 @@ const Register = () => {
                 margin="normal"
                 fullWidth
                 name="password1"
-                label="Password"
+                label={t("Password")}
                 type="password"
                 id="password1"
                 autoComplete="new-password"
@@ -161,7 +165,7 @@ const Register = () => {
                 margin="normal"
                 fullWidth
                 name="password2"
-                label="Confirm Password"
+                label={t("Confirm Password")}
                 type="password"
                 id="password2"
                 autoComplete="new-password"
@@ -177,7 +181,7 @@ const Register = () => {
                 {loading ? ( // عرض CircularProgress أثناء التحميل
                   <CircularProgress size={24} color="inherit" />
                 ) : (
-                  " Sign Up"
+                  t("Sign Up")
                 )}
               </Button>
             </Form>
