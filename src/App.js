@@ -21,10 +21,8 @@ function App() {
   return (
     <div>
       <LanguageProvider>
-        <Navbar />
         <AppRoutes />
         {/* <ThemeProvider theme={theme}> </ThemeProvider> */}
-        <Footer/>
       </LanguageProvider>
     </div>
   );
