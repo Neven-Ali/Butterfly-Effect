@@ -69,7 +69,7 @@ const Login = () => {
     setLoading(true); // بدء التحميل
     try {
       await login(values); // استدعاء وظيفة تسجيل الدخول من الـ repository
-      navigate("/home"); // الانتقال إلى الصفحة الرئيسية بعد تسجيل الدخول
+      navigate("/dashboard"); // الانتقال إلى الصفحة الرئيسية بعد تسجيل الدخول
     } catch (error) {
       setErrorMessage(error.message || "Login failed"); // عرض رسالة الخطأ
       setOpenPopup(true); // فتح popup عند وجود خطأ
