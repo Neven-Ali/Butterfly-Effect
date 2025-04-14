@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import MaterialTable from "@material-table/core";
 import { Avatar, Typography, Chip, Button } from "@mui/material";
 import { Image, Store, ArrowForward } from "@mui/icons-material";
-import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 ////
 import axios from "axios";
 import {
@@ -250,7 +249,7 @@ const Dashboard = () => {
             data={tableData}
             options={{
               paging: true,
-              pageSize: 5,
+              pageSize: 2,
               pageSizeOptions: [5, 10, 20],
               headerStyle: {
                 backgroundColor: "#f5f5f5",
@@ -298,101 +297,19 @@ const Dashboard = () => {
                 <DialogContent dividers>
                   <Stack direction="row" spacing={3}>
                     {/* صور المنتج */}
-                    {/* صور المنتج مع أزرار التنقل */}
-                    <Box sx={{ width: "40%", position: "relative" }}>
+                    <Box sx={{ width: "40%" }}>
                       {selectedProduct.photos_list?.length > 0 ? (
                         <Card>
                           <CardMedia
                             component="img"
                             height="300"
-                            image={
-                              selectedProduct.photos_list[currentImageIndex]
-                                .datafile
-                            }
+                            image={selectedProduct.photos_list[0].datafile}
                             alt={selectedProduct.translations?.ar?.name}
                           />
                           <CardContent>
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              align="center"
-                            >
-                              الصورة {currentImageIndex + 1} من{" "}
-                              {selectedProduct.photos_list.length}
+                            <Typography variant="body2" color="text.secondary">
+                              {selectedProduct.photos_list.length} صورة متاحة
                             </Typography>
-
-                            {/* مؤشر الصور (النقاط) */}
-                            {selectedProduct.photos_list.length > 1 && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "center",
-                                  my: 1,
-                                }}
-                              >
-                                {selectedProduct.photos_list.map((_, index) => (
-                                  <Box
-                                    key={index}
-                                    sx={{
-                                      width: 8,
-                                      height: 8,
-                                      borderRadius: "50%",
-                                      bgcolor:
-                                        currentImageIndex === index
-                                          ? "primary.main"
-                                          : "grey.400",
-                                      mx: 0.5,
-                                      cursor: "pointer",
-                                      transition: "background-color 0.3s",
-                                    }}
-                                    onClick={() => setCurrentImageIndex(index)}
-                                  />
-                                ))}
-                              </Box>
-                            )}
-                            {selectedProduct.photos_list.length > 1 && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  mt: 2,
-                                }}
-                              >
-                                {/* <Button
-                                  variant="contained"
-                                  onClick={handlePrevImage}
-                                  disabled={currentImageIndex === 0}
-                                >
-                                  السابقة
-                                </Button>
-                                <Button
-                                  variant="contained"
-                                  onClick={handleNextImage}
-                                  disabled={
-                                    currentImageIndex ===
-                                    selectedProduct.photos_list.length - 1
-                                  }
-                                >
-                                  التالية
-                                </Button> */}
-                                {/* // ثم استبدال الأزرار بـ: */}
-                                <Button
-                                  onClick={handlePrevImage}
-                                  disabled={currentImageIndex === 0}
-                                >
-                                  <ChevronLeft />
-                                </Button>
-                                <Button
-                                  onClick={handleNextImage}
-                                  disabled={
-                                    currentImageIndex ===
-                                    selectedProduct.photos_list.length - 1
-                                  }
-                                >
-                                  <ChevronRight />
-                                </Button>
-                              </Box>
-                            )}
                           </CardContent>
                         </Card>
                       ) : (
