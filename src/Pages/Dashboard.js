@@ -4,15 +4,13 @@ import { Avatar, Typography, Chip, Button } from "@mui/material";
 import { Image, Store, ArrowForward } from "@mui/icons-material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 ////
-import axios from "axios";
-import {
-  CircularProgress,
-  Alert,
-  Box,
-  AppBar,
-  Toolbar,
-  Container,
-} from "@mui/material";
+import { productsRepository } from "../repositories/productsRepository"; // استيراد الوظيفة الجديدة
+///
+import { Pagination } from "@mui/material";
+//
+import { useSearchParams } from "react-router-dom";
+//
+import { CircularProgress, Alert, Box, Container } from "@mui/material";
 import {
   Dialog,
   DialogTitle,
@@ -22,37 +20,58 @@ import {
   Card,
   CardMedia,
   CardContent,
-  Paper,
-  LinearProgress,
 } from "@mui/material";
 import { LocalOffer } from "@mui/icons-material";
 const Dashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  //
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 2,
+    totalCount: 0,
+  });
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    // قراءة البارامترات من URL
+    const pageParam = searchParams.get("page");
+    const pageSizeParam = searchParams.get("page_size");
+    const searchParam = searchParams.get("search");
+    console.log("URL Parameters:", {
+      page: pageParam,
+      page_size: pageSizeParam,
+      search: searchParam,
+    });
     const fetchProducts = async () => {
       try {
-        const token =
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ0NjU4NjYzLCJpYXQiOjE3NDQ2Mjk4NjMsImp0aSI6ImVkNmIxMDc4ZmVkNjQ5NTA5ZWUyNDhlZTRiYTk4YzAyIiwidXNlcl9pZCI6Mn0.pvtSSyC5kkgh0ffLyPUQXUtyxO4oppe7ziR2XiyI6io";
-        const response = await axios.get(
-          "https://daaboul.nasayimhalab.com/api/manager/products/",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        // تحويل البارامترات إلى أرقام (مع القيم الافتراضية)
+        const initialPage = pageParam ? parseInt(pageParam) : 1;
+        const initialPageSize = pageSizeParam ? parseInt(pageSizeParam) : 2;
+        const initialSearch = searchParam || "";
+        const {
+          products: productsData,
+          totalCount,
+          pageInfo,
+        } = await productsRepository(
+          initialPage,
+          initialPageSize,
+          initialSearch
         );
-
-        if (response.data.status === "success") {
-          setProducts(response.data.data.results);
-        } else {
-          setError("Failed to fetch products");
-        }
+        setProducts(productsData); // لا تنسى تحديث حالة products
+        setPagination({
+          currentPage: initialPage,
+          pageSize: initialPageSize,
+          totalPages: pageInfo.totalPages,
+          totalCount,
+        });
+        setSearchQuery(initialSearch);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -61,7 +80,35 @@ const Dashboard = () => {
     };
 
     fetchProducts();
-  }, []);
+  }, [searchParams]);
+
+  // pagination
+  const handlePageChange = (newPage) => {
+    setPagination((prev) => ({ ...prev, currentPage: newPage }));
+
+    // تحديث URL مع معاملات البحث الجديدة
+    setSearchParams({
+      page: newPage,
+      page_size: pagination.pageSize,
+      search: searchQuery,
+    });
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
+
+    // تحديث URL مع معاملات البحث الجديدة
+    setSearchParams({
+      page: 1,
+      page_size: pagination.pageSize,
+      search: query,
+    });
+  };
+
+  ///
+
+  //
 
   const handleRowClick = (rowData) => {
     setSelectedProduct(rowData);
@@ -97,9 +144,6 @@ const Dashboard = () => {
     branch_model: product.branch_model,
     active: product.active,
     translations: product.translations,
-    // price: `${product.price}${typeof product.price === "number" ? " ل.س" : ""}`,
-    // status: product.active ? "نشط" : "غير نشط",
-    // statusColor: product.active ? "success.main" : "error.main",
   }));
 
   // تعريف الأعمدة مع جميع الميزات المطلوبة
@@ -249,9 +293,12 @@ const Dashboard = () => {
             columns={columns}
             data={tableData}
             options={{
-              paging: true,
-              pageSize: 5,
-              pageSizeOptions: [5, 10, 20],
+              paging: false,
+              pageSize: pagination.pageSize,
+              pageSizeOptions: [2, 5, 10, 20], // يمكنك تعديل هذه الأرقام
+              initialPage: 0, // يبدأ من الصفر
+              filtering: false,
+              search: false, // تعطيل البحث الداخلي إذا كنت تستخدم البحث الخاص بك
               headerStyle: {
                 backgroundColor: "#f5f5f5",
                 fontWeight: "bold",
@@ -260,29 +307,44 @@ const Dashboard = () => {
               rowStyle: {
                 fontSize: "14px",
               },
+
+              searchText: searchQuery,
+              debounceInterval: 500,
+            }}
+            onChangePage={(page) => {
+              setPagination((prev) => ({
+                ...prev,
+                currentPage: page + 1, // التحويل من 0-based إلى 1-based
+              }));
+            }}
+            onChangeRowsPerPage={(pageSize) => {
+              const newPagination = {
+                pageSize: pageSize,
+                currentPage: 1, // العودة للصفحة الأولى عند تغيير الحجم
+              };
+              setPagination((prev) => ({ ...prev, ...newPagination }));
+
+              // تحديث URL مع حجم الصفحة الجديد
+              setSearchParams({
+                page: 1,
+                page_size: pageSize,
+                search: searchQuery,
+              });
             }}
             localization={{
-              pagination: {
-                labelDisplayedRows: "{from}-{to} من {count}",
-                labelRowsSelect: "صفوف",
-                firstTooltip: "الصفحة الأولى",
-                previousTooltip: "الصفحة السابقة",
-                nextTooltip: "الصفحة التالية",
-                lastTooltip: "الصفحة الأخيرة",
-              },
-              toolbar: {
-                searchPlaceholder: "بحث...",
-                exportTitle: "تصدير",
-                exportName: "CSV",
-              },
               body: {
                 emptyDataSourceMessage: "لا توجد بيانات متاحة",
-                filterRow: {
-                  filterTooltip: "تصفية",
-                },
               },
             }}
           />
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+            <Pagination
+              count={Math.ceil(pagination.totalCount / pagination.pageSize)}
+              page={pagination.currentPage}
+              onChange={(e, page) => handlePageChange(page)}
+              color="primary"
+            />
+          </Box>
           {/* تفاصيل المنتج في Dialog */}
           <Dialog
             open={openDialog}

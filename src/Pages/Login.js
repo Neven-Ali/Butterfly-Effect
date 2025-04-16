@@ -68,7 +68,12 @@ const Login = () => {
   const handleLogin = async (values) => {
     setLoading(true); // بدء التحميل
     try {
-      await login(values); // استدعاء وظيفة تسجيل الدخول من الـ repository
+      const response = await login(values); // استدعاء وظيفة تسجيل الدخول من الـ repository
+      // حفظ token في localStorage
+      const accessToken = localStorage.setItem(
+        "accessToken",
+        response.data.access
+      );
       navigate("/dashboard"); // الانتقال إلى الصفحة الرئيسية بعد تسجيل الدخول
     } catch (error) {
       setErrorMessage(error.message || "Login failed"); // عرض رسالة الخطأ
