@@ -16,7 +16,6 @@ const Home = () => {
         minHeight: "100vh",
       }}
     >
-      <Navbar/>
       <Container maxWidth="lg" sx={{ flexGrow: 1, py: 4 }}>
         <Typography variant="h2" align="center" gutterBottom>
           {t("welcome")}
@@ -25,7 +24,6 @@ const Home = () => {
           This is the home page content. You can add more sections here.
         </Typography>
       </Container>
-      <Footer/>
     </Box>
   );
 };

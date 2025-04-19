@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import MaterialTable from "@material-table/core";
 import { Avatar, Typography, Chip, Button } from "@mui/material";
-import { Image, Store, ArrowForward } from "@mui/icons-material";
+import { Image, Store, ArrowForward, Edit } from "@mui/icons-material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 ////
-import { productsRepository } from "../repositories/productsRepository"; // استيراد الوظيفة الجديدة
+import productsRepository from "../../../../repositories/productsRepository"; // استيراد الوظيفة الجديدة
 ///
 import { Pagination } from "@mui/material";
 //
 import { useSearchParams } from "react-router-dom";
 //
 import { CircularProgress, Alert, Box, Container } from "@mui/material";
+
 import {
   Dialog,
   DialogTitle,
@@ -22,7 +23,8 @@ import {
   CardContent,
 } from "@mui/material";
 import { LocalOffer } from "@mui/icons-material";
-const Dashboard = () => {
+import { useNavigate } from "react-router-dom";
+const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,7 @@ const Dashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const navigate = useNavigate();
   //
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -38,7 +41,6 @@ const Dashboard = () => {
     totalCount: 0,
   });
   const [searchQuery, setSearchQuery] = useState("");
-
   useEffect(() => {
     // قراءة البارامترات من URL
     const pageParam = searchParams.get("page");
@@ -59,7 +61,7 @@ const Dashboard = () => {
           products: productsData,
           totalCount,
           pageInfo,
-        } = await productsRepository(
+        } = await productsRepository.getProducts(
           initialPage,
           initialPageSize,
           initialSearch
@@ -82,6 +84,13 @@ const Dashboard = () => {
     fetchProducts();
   }, [searchParams]);
 
+  //Edit product
+  // دالة للتعامل مع التعديل
+  const handleEdit = (rowData) => {
+    console.log("Edit product:", rowData);
+    alert(`سيتم تعديل المنتج: ${rowData.name}`);
+    navigate(`/dashboard/products/${rowData.id}`);
+  };
   // pagination
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, currentPage: newPage }));
@@ -135,7 +144,6 @@ const Dashboard = () => {
   };
   // تحضير البيانات للجدول
   const tableData = products.map((product) => ({
-    id: product.id,
     photos_list: product.photos_list,
     name: product.translations?.ar?.name || "لا يوجد اسم",
     nameEn: product.translations?.en?.name || "no name",
@@ -144,42 +152,13 @@ const Dashboard = () => {
     branch_model: product.branch_model,
     active: product.active,
     translations: product.translations,
+    id: product.id, // تأكد من وجود id للمنتج
   }));
 
   // تعريف الأعمدة مع جميع الميزات المطلوبة
   const columns = [
     {
-      title: "ID",
-      field: "tableData.id",
-      render: (rowData) => rowData.tableData.id,
-      cellStyle: { width: 50, minWidth: 50 },
-    },
-    {
-      title: "صورة المنتج",
-      field: "photos_list",
-      render: (rowData) => {
-        const firstPhoto = rowData.photos_list?.[0];
-        return (
-          <Avatar
-            src={firstPhoto?.datafile}
-            alt="Product"
-            style={{ width: 56, height: 56 }}
-          >
-            {!firstPhoto && <Image />}
-          </Avatar>
-        );
-      },
-
-      cellStyle: {
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        width: 100,
-        minWidth: 100,
-      },
-    },
-    {
-      title: "اسم المنتج بالعربي",
+      title: "Product name in Arabic",
       field: "name",
       render: (rowData) => (
         <Typography variant="body2">
@@ -188,9 +167,9 @@ const Dashboard = () => {
       ),
       cellStyle: { width: 150, minWidth: 150 },
     },
-    { title: "اسم المنتج بالانجليزي", field: "nameEn" },
+    { title: "Product name in English", field: "nameEn" },
     {
-      title: "السعر",
+      title: "Price",
       field: "price",
       type: "numeric",
       render: (rowData) => (
@@ -215,7 +194,7 @@ const Dashboard = () => {
       },
     },
     {
-      title: "الفئة",
+      title: "Category",
       field: "category_model.name",
       render: (rowData) => (
         <Chip
@@ -232,7 +211,7 @@ const Dashboard = () => {
       cellStyle: { width: 150, minWidth: 150 },
     },
     {
-      title: "الفرع",
+      title: "Branch",
       field: "branch_model.name",
       render: (rowData) => (
         <Chip
@@ -245,11 +224,11 @@ const Dashboard = () => {
       cellStyle: { width: 150, minWidth: 150 },
     },
     {
-      title: "الحالة",
+      title: "Status",
       field: "active",
       render: (rowData) => (
         <Chip
-          label={rowData.active ? "نشط" : "غير نشط"}
+          label={rowData.active ? "Active" : "Inactive"}
           color={rowData.active ? "success" : "error"}
           size="small"
           style={{
@@ -261,20 +240,32 @@ const Dashboard = () => {
       ),
       cellStyle: { width: 100, minWidth: 100 },
     },
+
     {
-      title: "تفاصيل",
+      title: "Actions",
       field: "actions",
       render: (rowData) => (
-        <Button
-          variant="outlined"
-          size="small"
-          endIcon={<ArrowForward />}
-          onClick={() => handleRowClick(rowData)}
-        >
-          عرض
-        </Button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <Button
+            variant="outlined"
+            size="small"
+            endIcon={<ArrowForward />}
+            onClick={() => handleRowClick(rowData)}
+          >
+            Show
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            color="primary"
+            startIcon={<Edit />}
+            onClick={() => handleEdit(rowData)}
+          >
+            Edit
+          </Button>
+        </div>
       ),
-      cellStyle: { width: 100, minWidth: 100 },
+      cellStyle: { width: 180, minWidth: 180 },
     },
   ];
 
@@ -289,7 +280,7 @@ const Dashboard = () => {
       ) : (
         <>
           <MaterialTable
-            title="قائمة المنتجات"
+            title="List of products "
             columns={columns}
             data={tableData}
             options={{
@@ -355,7 +346,7 @@ const Dashboard = () => {
             {selectedProduct && (
               <>
                 <DialogTitle>
-                  تفاصيل المنتج: {selectedProduct.translations?.ar?.name}
+                  Product Details : {selectedProduct.translations?.en?.name}
                 </DialogTitle>
                 <DialogContent dividers>
                   <Stack direction="row" spacing={3}>
@@ -379,7 +370,7 @@ const Dashboard = () => {
                               color="text.secondary"
                               align="center"
                             >
-                              الصورة {currentImageIndex + 1} من{" "}
+                              photo {currentImageIndex + 1} from{" "}
                               {selectedProduct.photos_list.length}
                             </Typography>
 
@@ -467,7 +458,7 @@ const Dashboard = () => {
                           }}
                         >
                           <Typography variant="body2" color="text.secondary">
-                            لا توجد صور متاحة
+                            There are no pictures available
                           </Typography>
                         </Card>
                       )}
@@ -476,38 +467,42 @@ const Dashboard = () => {
                     {/* معلومات المنتج */}
                     <Box sx={{ width: "60%" }}>
                       <Typography variant="h6" gutterBottom>
-                        المعلومات الأساسية
+                        Basic Information
                       </Typography>
                       <Stack spacing={2}>
                         <Typography>
-                          <strong>الاسم العربي:</strong>{" "}
-                          {selectedProduct.translations?.ar?.name || "غير محدد"}
+                          <strong> Name in Arabic:</strong>{" "}
+                          {selectedProduct.translations?.ar?.name ||
+                            "Undefined "}
                         </Typography>
                         <Typography>
-                          <strong>الاسم الانكليزي:</strong>{" "}
-                          {selectedProduct.translations?.en?.name || "غير محدد"}
+                          <strong>Name in English :</strong>{" "}
+                          {selectedProduct.translations?.en?.name ||
+                            "Undefined "}
                         </Typography>
                         <Typography>
-                          <strong>الوصف العربي:</strong>{" "}
-                          {selectedProduct.translations?.ar?.brief ||
-                            "غير محدد"}
+                          <strong>Description :</strong>{" "}
+                          {selectedProduct.translations?.en?.brief ||
+                            "Undefined "}
                         </Typography>
                         <Typography>
-                          <strong>السعر:</strong>{" "}
+                          <strong>Price:</strong>{" "}
                           {selectedProduct.price?.toLocaleString() || "0"} SYP
                         </Typography>
                         <Typography>
-                          <strong>الفئة:</strong>{" "}
-                          {selectedProduct.category_model?.name || "غير محدد"}
+                          <strong>Category:</strong>{" "}
+                          {selectedProduct.category_model?.name || "Undefined"}
                         </Typography>
                         <Typography>
-                          <strong>الفرع:</strong>{" "}
-                          {selectedProduct.branch_model?.name || "غير محدد"}
+                          <strong>Branch:</strong>{" "}
+                          {selectedProduct.branch_model?.name || "Undefined"}
                         </Typography>
                         <Typography>
-                          <strong>الحالة:</strong>{" "}
+                          <strong>Status:</strong>{" "}
                           <Chip
-                            label={selectedProduct.active ? "نشط" : "غير نشط"}
+                            label={
+                              selectedProduct.active ? "Active" : "Inactive "
+                            }
                             color={selectedProduct.active ? "success" : "error"}
                             size="small"
                           />
@@ -520,7 +515,7 @@ const Dashboard = () => {
                               gutterBottom
                               sx={{ mt: 2 }}
                             >
-                              العروض المتاحة
+                              Available Offers
                             </Typography>
                             {selectedProduct.offers_list.map((offer) => (
                               <Card
@@ -571,4 +566,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Products;

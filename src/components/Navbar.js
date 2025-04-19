@@ -23,16 +23,16 @@ const Navbar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const navLinks = [
-    { title: t("Home"), path: "/" },
-    { title: t("About"), path: "/about" },
-    { title: t("Contact Us"), path: "/contact" },
+    { title: t("Home"), path: "/dashboard/home" },
+    { title: t("About"), path: "/dashboard/about" },
+    { title: t("Contact Us"), path: "/dashboard/contact" },
   ];
 
   const drawerItems = [
-    { title: t("Products"), path: "/products" },
-    { title: t("Images"), path: "/images" },
-    { title: t("Favorites"), path: "/favorites" },
-    { title: t("Requests"), path: "/requests" },
+    { title: t("Products"), path: "/dashboard/products" },
+    { title: t("Images"), path: "/dashboard/images" },
+    { title: t("Favorites"), path: "/dashboard/favorites" },
+    { title: t("Requests"), path: "/dashboard/requests" },
   ];
 
   const toggleDrawer = (open) => (event) => {

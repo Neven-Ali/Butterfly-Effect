@@ -5,7 +5,7 @@ import CardContent from "@mui/material/CardContent";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 
-const Products = () => {
+const Requests = () => {
   return (
     <Card sx={{ minWidth: 275 }}>
       <CardContent>
@@ -30,4 +30,4 @@ const Products = () => {
   );
 };
 
-export default Products;
+export default Requests;
