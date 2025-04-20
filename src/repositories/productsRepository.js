@@ -1,5 +1,6 @@
 import axios from "axios";
 const API_BASE_URL = "https://daaboul.nasayimhalab.com/api";
+
 const productsRepository = {
   getProducts: async (page = 1, pageSize = 2, searchQuery = "") => {
     try {
@@ -18,7 +19,7 @@ const productsRepository = {
       if (response.data.status === "success") {
         return {
           products: response.data.data.results,
-          totalCount: response.data.data.count, // إجمالي عدد المنتجات
+          totalCount: response.data.data.count,
           pageInfo: {
             currentPage: page,
             totalPages: Math.ceil(response.data.data.count / pageSize),
@@ -32,61 +33,61 @@ const productsRepository = {
     }
   },
 
-  // جلب منتج واحد بواسطة الـ ID
+  // الدالة الجديدة لجلب المنتج بواسطة ID
   getProductById: async (id) => {
     try {
+      const token = localStorage.getItem("accessToken");
       const response = await axios.get(
-        `${API_BASE_URL}/manager/products/${id}`
+        `${API_BASE_URL}/manager/products/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-      return response.data;
+      return response.data.data;
     } catch (error) {
-      throw new Error(
-        error.response?.data?.message || "Failed to fetch product"
-      );
+      throw error.response?.data?.message || "Failed to fetch product";
     }
   },
 
-  // تحديث المنتج
+  // الدالة الجديدة لتحديث المنتج
   updateProduct: async (id, productData) => {
     try {
+      const token = localStorage.getItem("accessToken");
       const response = await axios.put(
-        `${API_BASE_URL}/manager/products/${id}`,
+        `${API_BASE_URL}/manager/products/${id}/`,
         productData,
         {
           headers: {
             "Content-Type": "application/json",
-            // أضف أي headers أخرى مطلوبة (مثل Authorization)
+            Authorization: `Bearer ${token}`,
           },
         }
       );
       return response.data;
     } catch (error) {
-      throw new Error(
-        error.response?.data?.message || "Failed to update product"
-      );
+      throw error.response?.data?.message || "Failed to update product";
     }
   },
 
-  // جلب الأصناف المتاحة
+  // الدالة الجديدة لجلب الفئات
   getCategories: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/categories`);
-      return response.data;
+      const token = localStorage.getItem("accessToken");
+      const response = await axios.get(`${API_BASE_URL}/categories/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data.data.results.map((category) => ({
+        value: category.id,
+        label: category.name,
+      }));
     } catch (error) {
-      throw new Error(
-        error.response?.data?.message || "Failed to fetch categories"
-      );
+      throw error.response?.data?.message || "Failed to fetch categories";
     }
   },
-
-  // جلب التاغات المتاحة
-  // getTags: async () => {
-  //   try {
-  //     const response = await axios.get(`${API_BASE_URL}/tags`);
-  //     return response.data;
-  //   } catch (error) {
-  //     throw new Error(error.response?.data?.message || "Failed to fetch tags");
-  //   }
-  // },
 };
+
 export default productsRepository;

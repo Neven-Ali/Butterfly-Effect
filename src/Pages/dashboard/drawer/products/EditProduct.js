@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import axios from "axios";
 import {
   Container,
   Typography,
@@ -16,6 +17,9 @@ import {
   Autocomplete,
   Stack,
 } from "@mui/material";
+import productsRepository from "../../../../repositories/productsRepository"; // استيراد الـ repository الجديد
+
+const API_BASE_URL = "https://daaboul.nasayimhalab.com/api";
 
 const EditProduct = () => {
   const { id } = useParams();
@@ -26,31 +30,66 @@ const EditProduct = () => {
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [availableTags, setAvailableTags] = useState(["she", "he"]);
-  // جلب بيانات الفئات من API
+  const [initialProductData, setInitialProductData] = useState(null);
+  const [productDetails, setProductDetails] = useState(null);
+
+  // const getProductById = async (id) => {
+  //   try {
+  //     const token = localStorage.getItem("accessToken");
+  //     const response = await axios.get(
+  //       `https://daaboul.nasayimhalab.com/api/manager/products/${id}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+  //     return response.data.data; // عدل هذا السطر
+  //   } catch (error) {
+  //     throw new Error(
+  //       error.response?.data?.message || "Failed to fetch product"
+  //     );
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+  //     try {
+  //       const token = localStorage.getItem("accessToken");
+  //       const response = await fetch(
+  //         `https://daaboul.nasayimhalab.com/api/categories/`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
+
+  //       if (!response.ok) {
+  //         throw new Error("فشل في جلب بيانات الفئات");
+  //       }
+
+  //       const data = await response.json();
+  //       setCategories(
+  //         data.data.results.map((category) => ({
+  //           value: category.id,
+  //           label: category.name,
+  //         }))
+  //       );
+  //       setCategoriesLoading(false);
+  //     } catch (error) {
+  //       setError(error.message);
+  //       setCategoriesLoading(false);
+  //     }
+  //   };
+
+  //   fetchCategories();
+  // }, []);
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-        const response = await fetch(
-          `https://daaboul.nasayimhalab.com/api/categories/`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("فشل في جلب بيانات الفئات");
-        }
-
-        const data = await response.json();
-        setCategories(
-          data.data.results.map((category) => ({
-            value: category.id,
-            label: category.name,
-          }))
-        );
+        const categoriesData = await productsRepository.getCategories();
+        setCategories(categoriesData);
         setCategoriesLoading(false);
       } catch (error) {
         setError(error.message);
@@ -60,27 +99,86 @@ const EditProduct = () => {
 
     fetchCategories();
   }, []);
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const product = await productsRepository.getProductById(id);
+        setProductDetails(product);
+
+        setInitialProductData({
+          name: product.translations?.ar?.name || "",
+          name_en: product.translations?.en?.name || "",
+          description_ar: product.translations?.ar?.brief || "",
+          description_en: product.translations?.en?.brief || "",
+          category: product.category || "",
+          price: product.price || "",
+          model: product.model || "",
+          tags: product.tags ? product.tags.split(", ") : [],
+          photos: product.photos_list || [],
+        });
+      } catch (error) {
+        setError("Error fetching product");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  // useEffect(() => {
+  //   const fetchProduct = async () => {
+  //     try {
+  //       const product = await getProductById(id);
+  //       setProductDetails(product);
+
+  //       setInitialProductData({
+  //         name: product.translations?.ar?.name || "",
+  //         name_en: product.translations?.en?.name || "",
+  //         description_ar: product.translations?.ar?.brief || "",
+  //         description_en: product.translations?.en?.brief || "",
+  //         category: product.category || "",
+  //         price: product.price || "",
+  //         model: product.model || "",
+  //         tags: product.tags ? product.tags.split(", ") : [],
+  //         photos: product.photos_list || [],
+  //       });
+  //     } catch (error) {
+  //       setError("Error fetching product");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchProduct();
+  // }, [id]);
 
   const formik = useFormik({
-    initialValues: {
+    enableReinitialize: true,
+    initialValues: initialProductData || {
       name: "",
       name_en: "",
       description_ar: "",
       description_en: "",
       category: "",
       price: "",
+      model: "",
       tags: [],
       photos: [1],
     },
     validationSchema: Yup.object({
-      name: Yup.string().required("اسم المنتج (عربي) مطلوب"),
-      name_en: Yup.string().required("اسم المنتج (إنجليزي) مطلوب"),
-      description_ar: Yup.string().required("الوصف العربي مطلوب"),
-      description_en: Yup.string().required("الوصف الإنجليزي مطلوب"),
-      category: Yup.string().required("الفئة مطلوبة"),
+      name: Yup.string().required("Product name in arabic is required"),
+      name_en: Yup.string().required("Product name in english is required"),
+      description_ar: Yup.string().required("Arabic description is required"),
+      description_en: Yup.string().required("English description is required"),
+      category: Yup.string().required("Category is required"),
       price: Yup.number()
-        .required("السعر مطلوب")
-        .positive("يجب أن يكون السعر رقم موجب"),
+        .required("Price is required")
+        .positive("Price must be Positive"),
+      model: Yup.number()
+        .typeError("Model must be integer")
+        .integer("Model must be integer")
+        .required("Model is required"),
       tags: Yup.array(),
     }),
     onSubmit: async (values) => {
@@ -99,70 +197,45 @@ const EditProduct = () => {
             },
           },
           category: values.category,
-          tags: values.tags.join(", "), // تحويل المصفوفة إلى سلسلة مفصولة بفواصل
+          tags: values.tags.join(", "),
           price: values.price,
+          model: values.model,
           photos: values.photos,
         };
 
-        const response = await fetch(
-          `https://daaboul.nasayimhalab.com/api/manager/products/${id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(requestBody),
-          }
-        );
+        //       const response = await fetch(
+        //         `https://daaboul.nasayimhalab.com/api/manager/products/${id}/`,
+        //         {
+        //           method: "PUT",
+        //           headers: {
+        //             "Content-Type": "application/json",
+        //             Authorization: `Bearer ${token}`,
+        //           },
+        //           body: JSON.stringify(requestBody),
+        //         }
+        //       );
 
-        if (response.ok) {
-          setSuccess(true);
-          setTimeout(() => navigate("/dashboard/products"), 50000);
-        } else {
-          throw new Error("فشل في تحديث المنتج");
-        }
+        //       if (response.ok) {
+        //         setSuccess(true);
+        //         setTimeout(() => navigate("/dashboard/products"), 2000);
+        //       } else {
+        //         throw new Error("فشل في تحديث المنتج");
+        //       }
+        //     } catch (error) {
+        //       setError(error.message);
+        //     }
+        //   },
+        // });
+        await productsRepository.updateProduct(id, requestBody);
+        setSuccess(true);
+        setTimeout(() => navigate("/dashboard/products"), 2000);
       } catch (error) {
         setError(error.message);
       }
     },
   });
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const token = localStorage.getItem("accessToken");
-        const response = await fetch(
-          `https://daaboul.nasayimhalab.com/api/manager/products/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = await response.json();
-
-        // افتراض أن البيانات القادمة من الخادم بنفس الهيكل الجديد
-        formik.setValues({
-          name: data.translations?.ar?.name || "",
-          name_en: data.translations?.en?.name || "",
-          description_ar: data.translations?.ar?.brief || "",
-          description_en: data.translations?.en?.brief || "",
-          category: data.category || "",
-          price: data.price || "",
-          tags: data.tags ? data.tags.split(", ") : [], // تحويل السلسلة إلى مصفوفة
-          photos: data.photos || [],
-        });
-      } catch (error) {
-        setError("Error fetching product");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProduct();
-  }, [id]);
-  if (loading) {
+  if (loading || !initialProductData) {
     return (
       <Box display="flex" justifyContent="center" mt={4}>
         <CircularProgress />
@@ -178,7 +251,7 @@ const EditProduct = () => {
           gutterBottom
           sx={{ mb: 4, textAlign: "center" }}
         >
-          تعديل المنتج: {formik.values.name}
+          Modify the product: {formik.values.name_en}
         </Typography>
 
         {error && (
@@ -189,17 +262,16 @@ const EditProduct = () => {
 
         {success && (
           <Alert severity="success" sx={{ mb: 3 }}>
-            تم تحديث المنتج بنجاح!
+            Product updated successfully!
           </Alert>
         )}
-
         <form onSubmit={formik.handleSubmit}>
           <Stack spacing={3}>
-            {/* الصف الأول - أسماء المنتج */}
+            {/* باقي نموذج التعديل كما هو */}
             <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
               <TextField
                 sx={{ flex: 1, minWidth: 250 }}
-                label="اسم المنتج (عربي)"
+                label="Product name in Arabic"
                 name="name"
                 value={formik.values.name}
                 onChange={formik.handleChange}
@@ -211,7 +283,7 @@ const EditProduct = () => {
 
               <TextField
                 sx={{ flex: 1, minWidth: 250 }}
-                label="اسم المنتج (إنجليزي)"
+                label="Product name in English"
                 name="name_en"
                 value={formik.values.name_en}
                 onChange={formik.handleChange}
@@ -226,7 +298,7 @@ const EditProduct = () => {
             <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
               <TextField
                 sx={{ flex: 1, minWidth: 250 }}
-                label="الوصف العربي"
+                label="Arabic description"
                 name="description_ar"
                 multiline
                 rows={4}
@@ -245,7 +317,7 @@ const EditProduct = () => {
 
               <TextField
                 sx={{ flex: 1, minWidth: 250 }}
-                label="الوصف الإنجليزي"
+                label="English description"
                 name="description_en"
                 multiline
                 rows={4}
@@ -263,12 +335,12 @@ const EditProduct = () => {
               />
             </Box>
 
-            {/* الصف الثالث - الفئة والسعر */}
+            {/* الصف الثالث - الفئة والسعر والنموذج */}
             <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
               <TextField
                 select
                 sx={{ flex: 1, minWidth: 250 }}
-                label="الفئة"
+                label="The Category"
                 name="category"
                 value={formik.values.category}
                 onChange={formik.handleChange}
@@ -288,7 +360,7 @@ const EditProduct = () => {
 
               <TextField
                 sx={{ flex: 1, minWidth: 250 }}
-                label="السعر"
+                label="Price"
                 name="price"
                 type="number"
                 value={formik.values.price}
@@ -300,6 +372,22 @@ const EditProduct = () => {
                 InputProps={{
                   endAdornment: "SYP",
                 }}
+              />
+            </Box>
+
+            {/* الصف الرابع - النموذج */}
+            <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+              <TextField
+                sx={{ flex: 1, minWidth: 250 }}
+                label="Model"
+                name="model"
+                type="number"
+                value={formik.values.model}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.model && Boolean(formik.errors.model)}
+                helperText={formik.touched.model && formik.errors.model}
+                required
               />
             </Box>
 
@@ -322,7 +410,7 @@ const EditProduct = () => {
                 ))
               }
               renderInput={(params) => (
-                <TextField {...params} label="الوسوم" placeholder="أضف وسم" />
+                <TextField {...params} label="Tags" placeholder="Add Tags" />
               )}
             />
 
@@ -338,7 +426,7 @@ const EditProduct = () => {
                 {formik.isSubmitting ? (
                   <CircularProgress size={24} />
                 ) : (
-                  "حفظ التعديلات"
+                  "Save Changes"
                 )}
               </Button>
 
@@ -348,7 +436,7 @@ const EditProduct = () => {
                 onClick={() => navigate("/dashboard/products")}
                 sx={{ flex: 1 }}
               >
-                إلغاء
+                Cancel
               </Button>
             </Box>
           </Stack>

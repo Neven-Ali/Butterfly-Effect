@@ -88,7 +88,7 @@ const Products = () => {
   // دالة للتعامل مع التعديل
   const handleEdit = (rowData) => {
     console.log("Edit product:", rowData);
-    alert(`سيتم تعديل المنتج: ${rowData.name}`);
+    alert(`The product will be modified: ${rowData.nameEn}`);
     navigate(`/dashboard/products/${rowData.id}`);
   };
   // pagination
