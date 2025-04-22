@@ -1,7 +1,7 @@
 // src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUserDetails } from "../services/apiService";
+import { getUserDetails } from "../../repositories/authRepository";
 import {
   Box,
   Typography,

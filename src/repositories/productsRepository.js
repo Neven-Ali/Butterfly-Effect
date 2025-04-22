@@ -1,11 +1,13 @@
 import axios from "axios";
-const API_BASE_URL = "https://daaboul.nasayimhalab.com/api";
 
+const api = axios.create({
+  baseURL: "https://daaboul.nasayimhalab.com/api",
+});
 const productsRepository = {
   getProducts: async (page = 1, pageSize = 2, searchQuery = "") => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await axios.get(`${API_BASE_URL}/manager/products/`, {
+      const response = await api.get(`/manager/products/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -37,14 +39,11 @@ const productsRepository = {
   getProductById: async (id) => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await axios.get(
-        `${API_BASE_URL}/manager/products/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await api.get(`/manager/products/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       return response.data.data;
     } catch (error) {
       throw error.response?.data?.message || "Failed to fetch product";
@@ -55,8 +54,24 @@ const productsRepository = {
   updateProduct: async (id, productData) => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await axios.put(
-        `${API_BASE_URL}/manager/products/${id}/`,
+      const response = await api.put(`/manager/products/${id}/`, productData, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || "Failed to update product";
+    }
+  },
+
+  //دالة خلق منتج جديد
+  createProduct: async (productData) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await api.post(
+        `/manager/products/`, // نستخدم مسارًا بدون ID ونستخدم POST بدل PUT
         productData,
         {
           headers: {
@@ -67,7 +82,21 @@ const productsRepository = {
       );
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || "Failed to update product";
+      throw error.response?.data?.message || "Failed to create product";
+    }
+  },
+  /// دالة حذف المنتج
+  deleteProduct: async (id) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await api.delete(`/manager/products/${id}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || "Failed to delete product";
     }
   },
 
@@ -75,7 +104,7 @@ const productsRepository = {
   getCategories: async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await axios.get(`${API_BASE_URL}/categories/`, {
+      const response = await api.get(`/categories/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -50,6 +50,7 @@ const EditProduct = () => {
   const [availableTags, setAvailableTags] = useState(["she", "he"]);
   const [initialProductData, setInitialProductData] = useState(null);
   const [productDetails, setProductDetails] = useState(null);
+  const [isNewProduct, setIsNewProduct] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -82,8 +83,6 @@ const EditProduct = () => {
   useEffect(() => {
     fetchProduct();
   }, [fetchProduct]); // ⚠️ يعاد التنفيذ فقط إذا تغير `id`
-
- 
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -135,8 +134,17 @@ const EditProduct = () => {
           photos: values.photos,
         };
 
-        
-        await productsRepository.updateProduct(id, requestBody);
+        if (isNewProduct) {
+          await productsRepository.createProduct(requestBody); // سيستخدم endpoint الإنشاء
+        } else {
+          await productsRepository.updateProduct(id, requestBody); // سيستخدم endpoint التعديل
+        }
+
+        if (isNewProduct) {
+          await productsRepository.createProduct(requestBody);
+        } else {
+          await productsRepository.updateProduct(id, requestBody);
+        }
         setSuccess(true);
         setTimeout(() => navigate("/dashboard/products"), 1000);
       } catch (error) {
@@ -161,7 +169,9 @@ const EditProduct = () => {
           gutterBottom
           sx={{ mb: 4, textAlign: "center" }}
         >
-          Modify the product: {formik.values.name_en}
+          {isNewProduct
+            ? "Create New Product"
+            : `Modify the product: ${formik.values.name_en}`}
         </Typography>
 
         {error && (
@@ -181,6 +191,7 @@ const EditProduct = () => {
             categories={categories}
             availableTags={availableTags}
             navigate={navigate}
+            isNewProduct={isNewProduct}
           />
         </form>
       </Paper>

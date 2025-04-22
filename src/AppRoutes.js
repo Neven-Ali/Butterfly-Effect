@@ -9,8 +9,8 @@ import Favorites from "./pages/dashboard/drawer/Favorites";
 import Images from "./pages/dashboard/drawer/Images";
 import Products from "./pages/dashboard/drawer/products/Products";
 import Requests from "./pages/dashboard/drawer/Requests";
-import Contact from "./pages/dashboard/navlinkfolder/Contact";
-import About from "./pages/dashboard/navlinkfolder/About";
+import Contact from "./pages/dashboard/drawer/Contact";
+import About from "./pages/dashboard/drawer/About";
 import EditProduct from "./pages/dashboard/drawer/products/EditProduct";
 // import ThemeWrapper from "./ThemeWrapper";
 import Navbar from "./components/Navbar";
@@ -32,7 +32,8 @@ const AppRoutes = () => {
         <Route path="favorites" element={<Favorites />} />
         <Route path="images" element={<Images />} />
         <Route path="products" element={<Products />} />
-        <Route path="products/:id" element={<EditProduct />} />
+        <Route path="products/:id" element={<EditProduct />} />   
+        <Route path="products/new" element={<EditProduct />} />     
         <Route path="requests" element={<Requests />} />
         <Route path="home" element={<Home />} />
         <Route path="about" element={<About />} />

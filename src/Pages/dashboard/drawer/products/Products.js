@@ -3,6 +3,9 @@ import MaterialTable from "@material-table/core";
 import { Avatar, Typography, Chip, Button } from "@mui/material";
 import { Image, Store, ArrowForward, Edit } from "@mui/icons-material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
+import { Delete } from "@mui/icons-material";
+// في أعلى الملف مع باقي الواردات
+import { Add } from "@mui/icons-material";
 ////
 import productsRepository from "../../../../repositories/productsRepository"; // استيراد الوظيفة الجديدة
 ///
@@ -90,6 +93,42 @@ const Products = () => {
     console.log("Edit product:", rowData);
     alert(`The product will be modified: ${rowData.nameEn}`);
     navigate(`/dashboard/products/${rowData.id}`);
+  };
+  // دالة للتعامل مع اضافة عنصر جديد
+  const handleAddNewProduct = () => {
+    console.log("Adding new product");
+    alert("You will be redirected to add a new product");
+    navigate("/dashboard/products/new");
+  };
+  // دالة للتعامل مع الحذف
+  const handleDelete = async (rowData) => {
+    if (
+      window.confirm(`Are you sure you want to delete "${rowData.nameEn}"?`)
+    ) {
+      try {
+        await productsRepository.deleteProduct(rowData.id);
+        // إعادة تحميل البيانات بعد الحذف
+        const {
+          products: productsData,
+          totalCount,
+          pageInfo,
+        } = await productsRepository.getProducts(
+          pagination.currentPage,
+          pagination.pageSize,
+          searchQuery
+        );
+        setProducts(productsData);
+        setPagination((prev) => ({
+          ...prev,
+          totalPages: pageInfo.totalPages,
+          totalCount,
+        }));
+        alert("Product deleted successfully!");
+      } catch (err) {
+        setError(err.message);
+        alert("Failed to delete product");
+      }
+    }
   };
   // pagination
   const handlePageChange = (newPage) => {
@@ -263,9 +302,18 @@ const Products = () => {
           >
             Edit
           </Button>
+          <Button
+            variant="contained"
+            size="small"
+            color="error"
+            startIcon={<Delete />} // تأكد من استيراد أيقونة Delete
+            onClick={() => handleDelete(rowData)}
+          >
+            Delete
+          </Button>
         </div>
       ),
-      cellStyle: { width: 180, minWidth: 180 },
+      cellStyle: { width: 250, minWidth: 250 },
     },
   ];
 
@@ -328,6 +376,7 @@ const Products = () => {
               },
             }}
           />
+
           <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
             <Pagination
               count={Math.ceil(pagination.totalCount / pagination.pageSize)}
@@ -335,6 +384,17 @@ const Products = () => {
               onChange={(e, page) => handlePageChange(page)}
               color="primary"
             />
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", m: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Add />}
+              onClick={handleAddNewProduct}
+              sx={{ mb: 2 }}
+            >
+              Add New Product
+            </Button>
           </Box>
           {/* تفاصيل المنتج في Dialog */}
           <Dialog
@@ -470,6 +530,10 @@ const Products = () => {
                         Basic Information
                       </Typography>
                       <Stack spacing={2}>
+                        <Typography>
+                          <strong> ID:</strong>{" "}
+                          {selectedProduct.id || "Undefined "}
+                        </Typography>
                         <Typography>
                           <strong> Name in Arabic:</strong>{" "}
                           {selectedProduct.translations?.ar?.name ||
