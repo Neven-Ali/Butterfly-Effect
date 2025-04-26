@@ -50,7 +50,8 @@ const EditProduct = () => {
   const [availableTags, setAvailableTags] = useState(["she", "he"]);
   const [initialProductData, setInitialProductData] = useState(null);
   const [productDetails, setProductDetails] = useState(null);
-  const [isNewProduct, setIsNewProduct] = useState(false);
+  // const [isNewProduct, setIsNewProduct] = useState(false);
+  const [isNewProduct] = useState(!id); // تحديد ما إذا كان منتجًا جديدًا بناءً على وجود الـ id
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -69,6 +70,11 @@ const EditProduct = () => {
 
   /////
   const fetchProduct = useCallback(async () => {
+    if (isNewProduct) {
+      setInitialProductData(prepareInitialData({}));
+      setLoading(false);
+      return;
+    }
     try {
       const product = await productsRepository.getProductById(id);
       setProductDetails(product);
@@ -78,11 +84,11 @@ const EditProduct = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, isNewProduct]);
 
   useEffect(() => {
     fetchProduct();
-  }, [fetchProduct]); // ⚠️ يعاد التنفيذ فقط إذا تغير `id`
+  }, [fetchProduct]); 
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -135,25 +141,25 @@ const EditProduct = () => {
         };
 
         if (isNewProduct) {
-          await productsRepository.createProduct(requestBody); // سيستخدم endpoint الإنشاء
-        } else {
-          await productsRepository.updateProduct(id, requestBody); // سيستخدم endpoint التعديل
-        }
-
-        if (isNewProduct) {
+          // إنشاء منتج جديد
           await productsRepository.createProduct(requestBody);
+          setSuccess(true);
+          setTimeout(() => navigate("/dashboard/products"), 1000);
         } else {
+          // تعديل منتج موجود
           await productsRepository.updateProduct(id, requestBody);
+          setSuccess(true);
+          setTimeout(() => navigate("/dashboard/products"), 1000);
         }
-        setSuccess(true);
-        setTimeout(() => navigate("/dashboard/products"), 1000);
+        
       } catch (error) {
         setError(error.message);
+        setTimeout(() => navigate("/dashboard/products"), 500);
       }
     },
   });
 
-  if (loading || !initialProductData) {
+  if (loading || categoriesLoading) {
     return (
       <Box display="flex" justifyContent="center" mt={4}>
         <CircularProgress />

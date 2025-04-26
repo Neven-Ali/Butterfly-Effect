@@ -319,7 +319,7 @@ const Products = () => {
 
   return (
     <Container>
-      {loading ? (
+      {loading  ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress size={60} />
         </Box>
