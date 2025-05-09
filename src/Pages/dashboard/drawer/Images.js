@@ -8,7 +8,6 @@ import {
   Alert,
   styled,
   Button,
-  Grid,
   Card,
   CardMedia,
   Pagination,
@@ -21,16 +20,17 @@ import {
   Divider,
   Snackbar,
   IconButton,
-  Zoom,
+  ImageList,
+  ImageListItem,
+  ImageListItemBar,
 } from "@mui/material";
 import { Close, ZoomIn, ZoomOut } from "@mui/icons-material";
-import { Add } from "@mui/icons-material";
-
+import { Add, Info } from "@mui/icons-material";
+import { useSearchParams } from "react-router-dom";
 const Images = () => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -44,28 +44,66 @@ const Images = () => {
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const imageRef = useRef(null);
-  const itemsPerPage = 6;
+  const itemsPerPage = 5;
   // ... (الحالات الحالية)
   const [selectedFile, setSelectedFile] = useState(null);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const fileInputRef = useRef(null);
+
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 2,
+    totalCount: 0,
+  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState("");
   //////
   const fetchPhotos = async () => {
     try {
-      const response = await photosRepository.getPhotos();
-      // تأكد من أن البيانات تأتي بالهيكل الصحيح
-      const formattedPhotos = response.map((photo) => ({
-        id: photo.id,
-        url: photo.datafile || photo.url, // استخدم datafile إذا وجد
-        title: photo.name,
-        // أي حقول أخرى تحتاجها
-      }));
-      setPhotos(formattedPhotos);
+      setLoading(true);
+      setError(null);
+
+      const pageParam = searchParams.get("page");
+      const pageSizeParam = searchParams.get("page_size");
+      const searchParam = searchParams.get("search");
+      console.log("URL Parameters:", {
+        page: pageParam,
+        page_size: pageSizeParam,
+        search: searchParam,
+      });
+      // تحويل البارامترات إلى أرقام (مع القيم الافتراضية)
+      const initialPage = pageParam ? parseInt(pageParam) : 1;
+      const initialPageSize = pageSizeParam ? parseInt(pageSizeParam) : 5;
+      const initialSearch = searchParam || "";
+
+      const response = await photosRepository.getPhotos(
+        initialPage,
+        initialPageSize,
+        initialSearch
+      );
+      console.log("API Response:", response); // للتأكد من هيكل البيانات
+
+      const photosData = response.results || [];
+      const totalCount = response.totalCount || 0;
+
+      const totalPages =
+        response.pageInfo?.totalPages ||
+        Math.ceil(totalCount / initialPageSize) ||
+        1;
+      setPhotos(photosData); // لا تنسى تحديث حالة products
+      setPagination({
+        currentPage: initialPage,
+        pageSize: initialPageSize,
+        totalPages: totalPages,
+        totalCount,
+      });
+      setSearchQuery(initialSearch);
     } catch (err) {
-      setError("غير مصرح بالوصول. يرجى تسجيل الدخول.");
-      // معالجة الأخطاء
+      console.error("Error fetching photos:", err);
+      setError(err.message || "حدث خطأ أثناء جلب الصور");
     } finally {
       setLoading(false);
     }
@@ -74,28 +112,7 @@ const Images = () => {
   // استدعاءها في useEffect
   useEffect(() => {
     fetchPhotos();
-  }, []);
-
-  ///
-  // useEffect(() => {
-  //   const fetchUserData = async () => {
-  //     try {
-  //       const userData = await photosRepository.getPhotos();
-  //       setPhotos(userData);
-  //       console.log(userData);
-  //     } catch (err) {
-  //       if (err.response?.status === 401) {
-  //         setError("غير مصرح بالوصول. يرجى تسجيل الدخول.");
-  //       } else {
-  //         setError("فشل تحميل بيانات الصور");
-  //       }
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchUserData();
-  // }, []);
+  }, [searchParams]);
 
   const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(4),
@@ -104,12 +121,17 @@ const Images = () => {
     margin: "auto",
   }));
 
-  const paginatedPhotos = photos.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  const handlePageChange = (event, newPage) => {
+    setPagination((prev) => ({ ...prev, currentPage: newPage }));
 
-  ///////////////////////
+    // تحديث URL مع معاملات البحث الجديدة
+    setSearchParams({
+      page: newPage.toString(),
+      page_size: pagination.pageSize,
+      search: searchQuery,
+    });
+  };
+
   // وظيفة جديدة لمعالجة اختيار الملف
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -119,84 +141,37 @@ const Images = () => {
     }
   };
 
-  // وظيفة جديدة لرفع الصورة
-  // const handleUploadPhoto = async () => {
-  //   try {
-  //     setUploadLoading(true);
-  //     setUploadError(null);
-
-  //     const formData = new FormData();
-  //     formData.append("photo", selectedFile);
-
-  //     // أضف هذا السطر لفحص محتوى FormData (للتأكد من وجود الملف)
-  //     for (let [key, value] of formData.entries()) {
-  //       console.log(key, value);
-  //     }
-
-  //     const newPhoto = await photosRepository.createPhoto(formData);
-
-  //     // تأكد من أن newPhoto تحتوي على رابط الصورة (url)
-  //     console.log("الصورة الجديدة:", newPhoto);
-
-  //     // تحديث القائمة بإضافة الصورة الجديدة في البداية
-  //     setPhotos([newPhoto, ...photos]);
-  //     setSuccessMessage("تمت إضافة الصورة بنجاح");
-  //     setOpenAddDialog(false);
-  //     setSelectedFile(null);
-  //   } catch (err) {
-  //     console.error("خطأ في رفع الصورة:", err);
-  //     setUploadError(err.message || "فشل رفع الصورة");
-  //   } finally {
-  //     setUploadLoading(false);
-  //   }
-  // };
   const handleUploadPhoto = async () => {
     try {
       setUploadLoading(true);
-
-      // حساب أبعاد الصورة
-      const img = new Image();
-      img.src = URL.createObjectURL(selectedFile);
-
-      await new Promise((resolve) => {
-        img.onload = () => resolve();
-      });
+      setUploadError(null);
 
       const formData = new FormData();
-      formData.append("photo", selectedFile);
-      formData.append("width", img.width);
-      formData.append("height", img.height);
+      formData.append("datafile", selectedFile);
 
       const response = await photosRepository.createPhoto(formData);
 
-      // تأكد من أن الاستجابة تحتوي على البيانات المطلوبة
-      if (!response || !response.datafile) {
+      if (!response?.data?.datafile) {
         throw new Error("استجابة غير صالحة من الخادم");
       }
-
-      // تحديث الحالة
-      setPhotos((prev) => [
-        {
-          id: response.id,
-          url: response.datafile,
-          title: response.name,
-          width: response.width,
-          height: response.height,
-          created: response.created,
-        },
-        ...prev,
-      ]);
+      // إعادة جلب الصفحة الأولى بعد الإضافة
+      setPagination((prev) => ({ ...prev, currentPage: 1 }));
+      setSearchParams({
+        page: 1,
+        page_size: pagination.pageSize,
+        search: searchQuery,
+      });
 
       setSuccessMessage("تمت إضافة الصورة بنجاح");
       setOpenAddDialog(false);
       setSelectedFile(null);
     } catch (err) {
       console.error("Upload failed:", err);
-      const errorMsg =
-        err.message ||
+      setUploadError(
         err.response?.data?.message ||
-        "فشل رفع الصورة. يرجى المحاولة لاحقاً";
-      setUploadError(errorMsg);
+          err.message ||
+          "فشل رفع الصورة. يرجى المحاولة لاحقاً"
+      );
     } finally {
       setUploadLoading(false);
     }
@@ -208,10 +183,6 @@ const Images = () => {
   };
   const handleButtonClick = () => {
     fileInputRef.current.click();
-  };
-  //////////////////////////
-  const handlePageChange = (event, value) => {
-    setPage(value);
   };
 
   const handleOpenDialog = (photo) => {
@@ -291,9 +262,25 @@ const Images = () => {
 
       await photosRepository.deletePhoto(photoToDelete);
 
-      setPhotos(photos.filter((photo) => photo.id !== photoToDelete));
+      // إعادة تحميل البيانات بعد الحذف
+      const {
+        photos: photosData,
+        totalCount,
+        pageInfo,
+      } = await photosRepository.getPhotos(
+        pagination.currentPage,
+        pagination.pageSize
+      );
+
+      setPhotos(photosData);
+      setPagination((prev) => ({
+        ...prev,
+        totalPages: pageInfo.totalPages,
+        totalCount,
+      }));
+
       setSuccessMessage("تم حذف الصورة بنجاح");
-      handleCloseDeleteDialog();
+      setOpenDeleteDialog(false);
     } catch (err) {
       setDeleteError(err.response?.data?.message || "فشل حذف الصورة");
     } finally {
@@ -336,6 +323,20 @@ const Images = () => {
           <Typography variant="h4" component="h1" gutterBottom>
             عرض الصور
           </Typography>
+          {/* تنبيهات النجاح/الخطأ */}
+          {(successMessage || deleteError || uploadError) && (
+            <Alert
+              severity={successMessage ? "success" : "error"}
+              sx={{ mb: 2 }}
+              onClose={() => {
+                setSuccessMessage(null);
+                setDeleteError(null);
+                setUploadError(null);
+              }}
+            >
+              {successMessage || deleteError || uploadError}
+            </Alert>
+          )}
           <Dialog
             open={openAddDialog}
             onClose={handleCloseAddDialog}
@@ -395,70 +396,94 @@ const Images = () => {
           </Dialog>
           {photos.length > 0 ? (
             <>
-              <Grid container spacing={2} mt={2}>
-                {paginatedPhotos.map((photo) => (
-                  <Grid item xs={12} sm={6} md={4} key={photo.id}>
-                    <Card>
-                      <CardMedia
-                        component="img"
-                        height="200"
-                        image={photo.url}
-                        alt={photo.title || "صورة"}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => handleOpenPreview(photo)}
-                      />
-                      <Box p={2}>
-                        <Button
-                          variant="contained"
-                          fullWidth
-                          onClick={() => handleOpenDialog(photo)}
-                          sx={{ mb: 1 }}
-                        >
-                          عرض التفاصيل
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          fullWidth
-                          onClick={() => handleOpenDeleteDialog(photo.id)}
-                          disabled={deleteLoading}
-                        >
-                          {deleteLoading ? (
-                            <CircularProgress size={24} />
-                          ) : (
-                            "حذف الصورة"
-                          )}
-                        </Button>
-                      </Box>
-                    </Card>
-                  </Grid>
+              <ImageList
+                sx={{ width: "100%", height: "auto", my: 2 }}
+                cols={3} // عدد الأعمدة
+                rowHeight={200} // ارتفاع الصف
+                // gap={4} // المسافة بين الصور
+              >
+                {photos.map((photo) => (
+                  <ImageListItem key={photo.id}>
+                    <img
+                      src={photo.url}
+                      alt={photo.title || "صورة"}
+                      loading="lazy"
+                      style={{
+                        height: "100%",
+                        width: "100%",
+                        objectFit: "cover",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => handleOpenPreview(photo)}
+                    />
+                    <ImageListItemBar
+                      title={photo.title || "بدون عنوان"}
+                      subtitle={
+                        photo.created
+                          ? new Date(photo.created).toLocaleDateString()
+                          : ""
+                      }
+                      actionIcon={
+                        <>
+                          <IconButton
+                            sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDialog(photo);
+                            }}
+                          >
+                            <Info />
+                          </IconButton>
+                          <IconButton
+                            sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDeleteDialog(photo.id);
+                            }}
+                            disabled={deleteLoading}
+                          >
+                            {deleteLoading ? (
+                              <CircularProgress size={24} color="inherit" />
+                            ) : (
+                              <Close />
+                            )}
+                          </IconButton>
+                        </>
+                      }
+                    />
+                  </ImageListItem>
                 ))}
-              </Grid>
+              </ImageList>
 
               <Box display="flex" justifyContent="center" mt={4}>
-                <Pagination
-                  count={Math.ceil(photos.length / itemsPerPage)}
-                  page={page}
-                  onChange={handlePageChange}
-                  color="primary"
-                />
+                {pagination.totalCount > pagination.pageSize && (
+                  <Pagination
+                    count={pagination.totalPages}
+                    page={pagination.currentPage}
+                    onChange={handlePageChange}
+                    color="primary"
+                    showFirstButton
+                    showLastButton
+                  />
+                )}
               </Box>
+
               <Box sx={{ display: "flex", justifyContent: "flex-end", m: 2 }}>
                 <input
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  accept="image/*" // للسماح بالصور فقط
+                  accept="image/*"
                   style={{ display: "none" }}
                 />
                 <Button
                   variant="contained"
                   color="primary"
                   startIcon={<Add />}
-                  onClick={handleButtonClick}
+                  onClick={() => fileInputRef.current.click()}
                   sx={{ mb: 2 }}
                 >
-                  Add New Photo
+                  إضافة صورة جديدة
                 </Button>
               </Box>
             </>

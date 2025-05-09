@@ -4,23 +4,34 @@ const api = axios.create({
   baseURL: "https://daaboul.nasayimhalab.com/api",
 });
 const photosRepository = {
-  getPhotos: async () => {
+  getPhotos: async (page = 1, pageSize = 5, searchQuery = "") => {
     try {
       const token = localStorage.getItem("accessToken");
       const response = await api.get(`/manager/photos/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        params: {
+          page,
+          page_size: pageSize,
+          search: searchQuery,
+        },
       });
 
-      return response.data.data.results.map((photo) => ({
-        id: photo.id,
-        name: photo.name,
-        url: photo.datafile,
-        width: photo.width,
-        height: photo.height,
-        created: photo.created,
-      }));
+      return {
+        results: response.data.data.results.map((photo) => ({
+          id: photo.id,
+          title: photo.name,
+          url: photo.datafile,
+          width: photo.width,
+          height: photo.height,
+          created: photo.created,
+        })),
+        totalCount: response.data.data.count, // العدد الكلي للصور
+        pageInfo: {
+          totalPages: Math.ceil(response.data.data.count / pageSize),
+        },
+      };
     } catch (error) {
       throw error.response?.data?.message || "Failed to fetch photos";
     }
@@ -43,10 +54,14 @@ const photosRepository = {
   createPhoto: async (formData) => {
     try {
       const token = localStorage.getItem("accessToken");
-      console.log("Before upload - FormData contents:");
+
+      // تحويل FormData إلى كائن عادي للتأكد من المحتوى
+      const formDataObj = {};
       for (let [key, value] of formData.entries()) {
-        console.log(key, value);
+        formDataObj[key] = value;
       }
+      console.log("FormData contents:", formDataObj);
+
       const response = await api.post("/manager/photos/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -54,10 +69,13 @@ const photosRepository = {
         },
       });
 
-      // الـ API يعيد كائنًا مباشرًا وليس مصفوفة
-      console.log("API Response:", response.data); // سجل الاستجابة
-      return response.data; // تأكد من أن هذا يعيد الكائن مباشرة
+      console.log("API Response:", response.data);
+      return response.data;
     } catch (error) {
+      console.error(
+        "Upload error details:",
+        error.response?.data || error.message
+      );
       throw error.response?.data || error;
     }
   },
