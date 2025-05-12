@@ -36,6 +36,34 @@ const photosRepository = {
       throw error.response?.data?.message || "Failed to fetch photos";
     }
   },
+  // أضف هذه الدالة الجديدة
+  getAllPhotos: async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await api.get(`/manager/photos/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        // params: {
+        //   all: true, // إرسال معلمة لطلب جميع الصور
+        // },
+      });
+  
+      return {
+        results: response.data.data.results.map((photo) => ({
+          id: photo.id,
+          title: photo.name,
+          url: photo.datafile,
+          width: photo.width,
+          height: photo.height,
+          created: photo.created,
+        })),
+        totalCount: response.data.data.count,
+      };
+    } catch (error) {
+      throw error.response?.data?.message || "Failed to fetch all photos";
+    }
+  },
   deletePhoto: async (photoId) => {
     try {
       const token = localStorage.getItem("accessToken");

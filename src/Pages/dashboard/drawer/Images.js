@@ -28,6 +28,7 @@ import { Close, ZoomIn, ZoomOut } from "@mui/icons-material";
 import { Add, Info } from "@mui/icons-material";
 import { useSearchParams } from "react-router-dom";
 import PhotoWidget from "./PhotoWidget";
+import ImageGalleryDialog from "./ImageGalleryDialog";
 const Images = () => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +47,6 @@ const Images = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const fileInputRef = useRef(null);
-
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -55,7 +55,24 @@ const Images = () => {
   });
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
-  //////
+  ////// Image Gallery
+  const [openGalleryDialog, setOpenGalleryDialog] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [allPhotos, setAllPhotos] = useState([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  /////
+  // دالة جديدة لجلب كل الصور
+  const fetchAllPhotos = async () => {
+    try {
+      setGalleryLoading(true);
+      const response = await photosRepository.getAllPhotos();
+      setAllPhotos(response.results || response); // حسب هيكل الاستجابة من الخادم
+    } catch (err) {
+      console.error("Error fetching all photos:", err);
+    } finally {
+      setGalleryLoading(false);
+    }
+  };
   const fetchPhotos = async () => {
     try {
       setLoading(true);
@@ -173,6 +190,11 @@ const Images = () => {
   };
   const handleButtonClick = () => {
     fileInputRef.current.click();
+  };
+  // عدل دالة فتح المعرض لتحميل الصور أولاً
+  const handleOpenGallery = async () => {
+    await fetchAllPhotos();
+    setOpenGalleryDialog(true);
   };
 
   const handleOpenDialog = (photo) => {
@@ -321,7 +343,6 @@ const Images = () => {
           </Dialog>
           {photos.length > 0 ? (
             <>
-              {/* <Box display="flex" justifyContent="center" mt={4}> */}
               <ImageList
                 sx={{ width: "100%", height: "auto", my: 2 }}
                 cols={3}
@@ -337,17 +358,18 @@ const Images = () => {
                   />
                 ))}
               </ImageList>
-              {pagination.totalCount > pagination.pageSize && (
-                <Pagination
-                  count={pagination.totalPages}
-                  page={pagination.currentPage}
-                  onChange={handlePageChange}
-                  color="primary"
-                  showFirstButton
-                  showLastButton
-                />
-              )}
-              {/* </Box> */}
+              <Box display="flex" justifyContent="center" mt={4}>
+                {pagination.totalCount > pagination.pageSize && (
+                  <Pagination
+                    count={pagination.totalPages}
+                    page={pagination.currentPage}
+                    onChange={handlePageChange}
+                    color="primary"
+                    showFirstButton
+                    showLastButton
+                  />
+                )}
+              </Box>
 
               <Box sx={{ display: "flex", justifyContent: "flex-end", m: 2 }}>
                 <input
@@ -366,6 +388,16 @@ const Images = () => {
                 >
                   إضافة صورة جديدة
                 </Button>
+                {/* //// زر لفتح المعرض */}
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={handleOpenGallery}
+                  
+                  sx={{ mb: 2, mr: 2 }}
+                >
+                  اختر من المعرض
+                </Button>
               </Box>
             </>
           ) : (
@@ -373,7 +405,25 @@ const Images = () => {
           )}
         </StyledPaper>
       </Box>
-
+      {/* لعرض الصور المحددة */}
+      {selectedImages.length > 0 && (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            الصور المحددة ({selectedImages.length})
+          </Typography>
+          <ImageList cols={3} rowHeight={150}>
+            {selectedImages.map((image) => (
+              <ImageListItem key={image.id}>
+                <img
+                  src={image.url}
+                  alt={image.title || "صورة محددة"}
+                  loading="lazy"
+                />
+              </ImageListItem>
+            ))}
+          </ImageList>
+        </Box>
+      )}
       {/* Dialog لعرض التفاصيل */}
       <Dialog
         open={openDialog}
@@ -468,6 +518,17 @@ const Images = () => {
           {successMessage || deleteError}
         </Alert>
       </Snackbar>
+      {/* معرض الصور */}
+       <ImageGalleryDialog
+        open={openGalleryDialog}
+        onClose={() => setOpenGalleryDialog(false)}
+        images={allPhotos}
+        loading={galleryLoading}
+        onSelect={(selected) => {
+          setSelectedImages(selected);
+          console.log("الصور المحددة:", selected);
+        }}
+      />
     </div>
   );
 };
