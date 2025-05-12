@@ -27,6 +27,7 @@ import {
 import { Close, ZoomIn, ZoomOut } from "@mui/icons-material";
 import { Add, Info } from "@mui/icons-material";
 import { useSearchParams } from "react-router-dom";
+import PhotoWidget from "./PhotoWidget";
 const Images = () => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,12 +39,6 @@ const Images = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState(null);
-  const [openPreview, setOpenPreview] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const imageRef = useRef(null);
   const itemsPerPage = 5;
   // ... (الحالات الحالية)
   const [selectedFile, setSelectedFile] = useState(null);
@@ -145,7 +140,7 @@ const Images = () => {
     try {
       setUploadLoading(true);
       setUploadError(null);
-
+      setLoading(true); // إضافة هذا السطر لإظهار مؤشر التحميل في الواجهة
       const formData = new FormData();
       formData.append("datafile", selectedFile);
 
@@ -154,13 +149,8 @@ const Images = () => {
       if (!response?.data?.datafile) {
         throw new Error("استجابة غير صالحة من الخادم");
       }
-      // إعادة جلب الصفحة الأولى بعد الإضافة
-      setPagination((prev) => ({ ...prev, currentPage: 1 }));
-      setSearchParams({
-        page: 1,
-        page_size: pagination.pageSize,
-        search: searchQuery,
-      });
+      // إعادة جلب البيانات بعد الإضافة بنجاح
+      await fetchPhotos(); // هذه هي الدالة التي تقوم بجلب البيانات
 
       setSuccessMessage("تمت إضافة الصورة بنجاح");
       setOpenAddDialog(false);
@@ -194,57 +184,6 @@ const Images = () => {
     setOpenDialog(false);
   };
 
-  const handleOpenPreview = (photo) => {
-    setSelectedPhoto(photo);
-    setOpenPreview(true);
-    setZoomLevel(1);
-    setPosition({ x: 0, y: 0 });
-  };
-
-  const handleClosePreview = () => {
-    setOpenPreview(false);
-  };
-
-  const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(prev + 0.25, 3));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 0.25, 0.5));
-  };
-
-  const handleWheel = (e) => {
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      handleZoomIn();
-    } else {
-      handleZoomOut();
-    }
-  };
-
-  const handleMouseDown = (e) => {
-    if (zoomLevel <= 1) return;
-
-    setIsDragging(true);
-    setStartPos({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging || zoomLevel <= 1) return;
-
-    setPosition({
-      x: e.clientX - startPos.x,
-      y: e.clientY - startPos.y,
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
   const handleOpenDeleteDialog = (photoId) => {
     setPhotoToDelete(photoId);
     setOpenDeleteDialog(true);
@@ -259,25 +198,11 @@ const Images = () => {
     try {
       setDeleteLoading(true);
       setDeleteError(null);
-
+      setLoading(true); // إضافة هذا السطر لإظهار مؤشر التحميل في الواجهة
       await photosRepository.deletePhoto(photoToDelete);
 
-      // إعادة تحميل البيانات بعد الحذف
-      const {
-        photos: photosData,
-        totalCount,
-        pageInfo,
-      } = await photosRepository.getPhotos(
-        pagination.currentPage,
-        pagination.pageSize
-      );
-
-      setPhotos(photosData);
-      setPagination((prev) => ({
-        ...prev,
-        totalPages: pageInfo.totalPages,
-        totalCount,
-      }));
+      // إعادة جلب البيانات بعد الحذف بنجاح
+      await fetchPhotos();
 
       setSuccessMessage("تم حذف الصورة بنجاح");
       setOpenDeleteDialog(false);
@@ -396,77 +321,33 @@ const Images = () => {
           </Dialog>
           {photos.length > 0 ? (
             <>
+              {/* <Box display="flex" justifyContent="center" mt={4}> */}
               <ImageList
                 sx={{ width: "100%", height: "auto", my: 2 }}
-                cols={3} // عدد الأعمدة
-                rowHeight={200} // ارتفاع الصف
-                // gap={4} // المسافة بين الصور
+                cols={3}
+                rowHeight={200}
               >
                 {photos.map((photo) => (
-                  <ImageListItem key={photo.id}>
-                    <img
-                      src={photo.url}
-                      alt={photo.title || "صورة"}
-                      loading="lazy"
-                      style={{
-                        height: "100%",
-                        width: "100%",
-                        objectFit: "cover",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => handleOpenPreview(photo)}
-                    />
-                    <ImageListItemBar
-                      title={photo.title || "بدون عنوان"}
-                      subtitle={
-                        photo.created
-                          ? new Date(photo.created).toLocaleDateString()
-                          : ""
-                      }
-                      actionIcon={
-                        <>
-                          <IconButton
-                            sx={{ color: "rgba(255, 255, 255, 0.7)" }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenDialog(photo);
-                            }}
-                          >
-                            <Info />
-                          </IconButton>
-                          <IconButton
-                            sx={{ color: "rgba(255, 255, 255, 0.7)" }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenDeleteDialog(photo.id);
-                            }}
-                            disabled={deleteLoading}
-                          >
-                            {deleteLoading ? (
-                              <CircularProgress size={24} color="inherit" />
-                            ) : (
-                              <Close />
-                            )}
-                          </IconButton>
-                        </>
-                      }
-                    />
-                  </ImageListItem>
+                  <PhotoWidget
+                    key={photo.id}
+                    photo={photo}
+                    onInfoClick={handleOpenDialog}
+                    onDeleteClick={handleOpenDeleteDialog}
+                    deleteLoading={deleteLoading}
+                  />
                 ))}
               </ImageList>
-
-              <Box display="flex" justifyContent="center" mt={4}>
-                {pagination.totalCount > pagination.pageSize && (
-                  <Pagination
-                    count={pagination.totalPages}
-                    page={pagination.currentPage}
-                    onChange={handlePageChange}
-                    color="primary"
-                    showFirstButton
-                    showLastButton
-                  />
-                )}
-              </Box>
+              {pagination.totalCount > pagination.pageSize && (
+                <Pagination
+                  count={pagination.totalPages}
+                  page={pagination.currentPage}
+                  onChange={handlePageChange}
+                  color="primary"
+                  showFirstButton
+                  showLastButton
+                />
+              )}
+              {/* </Box> */}
 
               <Box sx={{ display: "flex", justifyContent: "flex-end", m: 2 }}>
                 <input
@@ -571,105 +452,6 @@ const Images = () => {
             {deleteLoading ? <CircularProgress size={24} /> : "حذف"}
           </Button>
         </DialogActions>
-      </Dialog>
-
-      {/* Dialog لعرض الصورة المكبرة مع ميزات التكبير والتحريك */}
-      <Dialog
-        open={openPreview}
-        onClose={handleClosePreview}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          style: {
-            backgroundColor: "transparent",
-            boxShadow: "none",
-            overflow: "visible",
-          },
-        }}
-      >
-        <div
-          style={{
-            position: "relative",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100%",
-          }}
-          onWheel={handleWheel}
-        >
-          {/* زر الإغلاق */}
-          <IconButton
-            onClick={handleClosePreview}
-            sx={{
-              position: "absolute",
-              top: 16,
-              right: 16,
-              color: "white",
-              backgroundColor: "rgba(0,0,0,0.5)",
-              zIndex: 2,
-            }}
-          >
-            <Close />
-          </IconButton>
-
-          {/* أزرار التحكم في التكبير */}
-          <Box
-            position="absolute"
-            bottom={16}
-            right={16}
-            zIndex={2}
-            display="flex"
-            flexDirection="column"
-            gap={1}
-          >
-            <IconButton
-              onClick={handleZoomIn}
-              disabled={zoomLevel >= 3}
-              sx={{
-                color: "white",
-                backgroundColor: "rgba(0,0,0,0.5)",
-              }}
-            >
-              <ZoomIn />
-            </IconButton>
-            <IconButton
-              onClick={handleZoomOut}
-              disabled={zoomLevel <= 0.5}
-              sx={{
-                color: "white",
-                backgroundColor: "rgba(0,0,0,0.5)",
-              }}
-            >
-              <ZoomOut />
-            </IconButton>
-          </Box>
-
-          {/* الصورة مع تأثير التكبير والتحريك */}
-          <div
-            ref={imageRef}
-            style={{
-              transform: `scale(${zoomLevel}) translate(${position.x}px, ${position.y}px)`,
-              transformOrigin: "center center",
-              cursor:
-                zoomLevel > 1 ? (isDragging ? "grabbing" : "grab") : "default",
-              transition: isDragging ? "none" : "transform 0.25s ease",
-            }}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-          >
-            <img
-              src={selectedPhoto?.url}
-              alt={selectedPhoto?.title || "صورة مكبرة"}
-              style={{
-                maxWidth: "100%",
-                maxHeight: "90vh",
-                display: "block",
-              }}
-            />
-          </div>
-        </div>
       </Dialog>
 
       {/* رسائل التنبيه */}
